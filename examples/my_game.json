@@ -1,0 +1,16 @@
+{
+  "name": "Mi Juego Indie RPG",
+  "price": 14.99,
+  "required_age": 12,
+  "n_languages": 5,
+  "multiplayer": false,
+  "windows": true,
+  "mac": false,
+  "linux": true,
+  "genres": ["RPG", "Indie", "Adventure"],
+  "tags": ["Singleplayer", "RPG", "Story Rich", "Fantasy", "Open World"],
+  "publisher": "Other",
+  "description": "An epic indie RPG set in a dark fantasy world with deep lore and branching narrative choices.",
+  "release_year": 2025,
+  "release_quarter": 2
+}
