@@ -1,14 +1,14 @@
 """
-02.1_train_xgb_v2.py
-====================
-XGBoost con regularización anti-overfitting + búsqueda de hiperparámetros.
+02.1_train_XGB.py
+=================
+XGBoost con hiperparámetros optimizados (sin RandomizedSearchCV).
 """
 
 import pandas as pd
 import numpy as np
 import os, json, joblib
 from xgboost                    import XGBClassifier
-from sklearn.model_selection    import StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection    import StratifiedKFold, train_test_split
 from sklearn.pipeline           import Pipeline
 from sklearn.metrics            import classification_report, f1_score
 from sklearn.utils.class_weight import compute_sample_weight
@@ -53,66 +53,25 @@ for k, v in y.value_counts().sort_index().items():
     print(f"  {['Fracaso','Moderado','Alto éxito'][k]}: {v} ({v/len(y)*100:.1f}%)")
 
 # ─────────────────────────────────────────────
-# 2. RANDOMIZED SEARCH — encuentra la combinación
-#    de hiperparámetros que mejor generaliza
+# 2. HIPERPARÁMETROS OPTIMIZADOS
 # ─────────────────────────────────────────────
-# Espacio de búsqueda enfocado en regularización
-param_dist = {
-    "clf__max_depth":        [3, 4, 5, 6],          # más bajo = menos overfitting
-    "clf__learning_rate":    [0.01, 0.03, 0.05],    # más bajo = más conservador
-    "clf__n_estimators":     [200, 400, 600],
-    "clf__subsample":        [0.5, 0.6, 0.7, 0.8],  # más bajo = menos overfitting
-    "clf__colsample_bytree": [0.5, 0.6, 0.7, 0.8],
-    "clf__min_child_weight": [5, 10, 20, 30],        # más alto = menos overfitting
-    "clf__gamma":            [0, 0.1, 0.3, 0.5, 1.0], # más alto = menos overfitting
-    "clf__reg_alpha":        [0, 0.1, 0.5, 1.0],    # L1
-    "clf__reg_lambda":       [1.0, 2.0, 5.0],        # L2
-}
-
-base_clf = XGBClassifier(
-    objective    = "multi:softprob",
-    num_class    = 3,
-    eval_metric  = "mlogloss",
-    random_state = 42,
-    n_jobs       = -1,
+BEST_PARAMS = dict(
+    subsample        = 0.6,
+    reg_lambda       = 1.0,
+    reg_alpha        = 0.1,
+    n_estimators     = 400,
+    min_child_weight = 5,
+    max_depth        = 5,
+    learning_rate    = 0.03,
+    gamma            = 1.0,
+    colsample_bytree = 0.6,
 )
-
-pipeline = Pipeline([("clf", base_clf)])
-
-cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-search = RandomizedSearchCV(
-    pipeline,
-    param_distributions = param_dist,
-    n_iter              = 40,       # aumenta a 80-100 si tienes tiempo
-    scoring             = "f1_macro",
-    cv                  = cv,
-    verbose             = 2,
-    random_state        = 42,
-    n_jobs              = 1,        # XGB ya usa n_jobs=-1 internamente
-    refit               = False,    # reentrenamos manualmente con sample_weight
-)
-
-print("\nBúsqueda de hiperparámetros (RandomizedSearchCV, 40 iteraciones)…")
-# sample_weight en RandomizedSearchCV requiere pasar fit_params
-sw_full = compute_sample_weight("balanced", y)
-search.fit(X, y, clf__sample_weight=sw_full)
-
-best_params = search.best_params_
-best_cv_score = search.best_score_
-print(f"\n  Mejores parámetros: {best_params}")
-print(f"  Mejor F1-macro CV:  {best_cv_score:.3f}")
 
 # ─────────────────────────────────────────────
 # 3. CV MANUAL CON EARLY STOPPING
-#    Usamos los mejores params + early stopping
-#    para verificar el gap train/val fold a fold
 # ─────────────────────────────────────────────
-print("\nCV manual con early stopping (verificación gap overfitting)…")
-
-# Extraemos los params sin el prefijo "clf__"
-best = {k.replace("clf__", ""): v for k, v in best_params.items()}
-
+print("\nCross-validation (5-fold estratificado)…")
+cv           = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 cv_scores    = []
 train_scores = []
 
@@ -122,15 +81,14 @@ for fold, (train_idx, val_idx) in enumerate(cv.split(X, y)):
     sw = compute_sample_weight("balanced", y_tr)
 
     clf_fold = XGBClassifier(
-        **best,
+        **BEST_PARAMS,
         objective             = "multi:softprob",
         num_class             = 3,
         eval_metric           = "mlogloss",
-        early_stopping_rounds = 30,   # ← aquí
+        early_stopping_rounds = 30,
         random_state          = 42,
         n_jobs                = -1,
     )
-
     clf_fold.fit(
         X_tr, y_tr,
         sample_weight = sw,
@@ -138,17 +96,12 @@ for fold, (train_idx, val_idx) in enumerate(cv.split(X, y)):
         verbose       = False,
     )
 
-    y_pred_val   = clf_fold.predict(X_val)
-    y_pred_train = clf_fold.predict(X_tr)
-
-    val_f1   = f1_score(y_val,  y_pred_val,   average="macro")
-    train_f1 = f1_score(y_tr,   y_pred_train, average="macro")
-    gap      = train_f1 - val_f1
-
+    val_f1   = f1_score(y_val, clf_fold.predict(X_val), average="macro")
+    train_f1 = f1_score(y_tr,  clf_fold.predict(X_tr),  average="macro")
     cv_scores.append(val_f1)
     train_scores.append(train_f1)
-    print(f"  Fold {fold+1}: train={train_f1:.3f}  val={val_f1:.3f}  gap={gap:.3f}  "
-          f"(best iter: {clf_fold.best_iteration})")
+    print(f"  Fold {fold+1}: train={train_f1:.3f}  val={val_f1:.3f}  "
+          f"gap={train_f1-val_f1:.3f}  (best iter: {clf_fold.best_iteration})")
 
 cv_scores    = np.array(cv_scores)
 train_scores = np.array(train_scores)
@@ -156,27 +109,24 @@ print(f"\n  Val  F1-macro: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
 print(f"  Train F1-macro: {train_scores.mean():.3f} ± {train_scores.std():.3f}")
 print(f"  Gap medio:      {(train_scores - cv_scores).mean():.3f}")
 
-
 # ─────────────────────────────────────────────
 # 4. FIT FINAL
 # ─────────────────────────────────────────────
 print("\nEntrenando modelo final…")
-final_clf = XGBClassifier(
-    **best,
-    objective             = "multi:softprob",
-    num_class             = 3,
-    eval_metric           = "mlogloss",
-    early_stopping_rounds = 30,   # ← aquí, en el constructor
-    random_state          = 42,
-    n_jobs                = -1,
-)
-
-from sklearn.model_selection import train_test_split
 X_tr_f, X_val_f, y_tr_f, y_val_f = train_test_split(
     X, y, test_size=0.1, stratify=y, random_state=42
 )
 sw_tr_f = compute_sample_weight("balanced", y_tr_f)
 
+final_clf = XGBClassifier(
+    **BEST_PARAMS,
+    objective             = "multi:softprob",
+    num_class             = 3,
+    eval_metric           = "mlogloss",
+    early_stopping_rounds = 30,
+    random_state          = 42,
+    n_jobs                = -1,
+)
 final_clf.fit(
     X_tr_f, y_tr_f,
     sample_weight = sw_tr_f,
@@ -185,7 +135,6 @@ final_clf.fit(
 )
 print(f"  Mejor iteración: {final_clf.best_iteration}")
 
-# Wrap en pipeline para compatibilidad con 03_predict.py
 final_pipeline = Pipeline([("clf", final_clf)])
 
 y_pred = final_pipeline.predict(X)
@@ -200,9 +149,9 @@ joblib.dump(final_pipeline, f"{MODEL_DIR}/xgb_pipeline.joblib")
 
 metadata = {
     "numeric_features": NUMERIC,
-    "target":           TARGET,
+    "tagit get":           TARGET,
     "classes":          {0: "Fracaso", 1: "Moderado", 2: "Alto éxito"},
-    "best_params":      {k.replace("clf__", ""): str(v) for k, v in best_params.items()},
+    "best_params":      BEST_PARAMS,
     "cv_f1_macro_mean": float(cv_scores.mean()),
     "cv_f1_macro_std":  float(cv_scores.std()),
     "n_train":          len(X),

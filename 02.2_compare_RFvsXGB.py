@@ -77,25 +77,41 @@ for fold, (train_idx, val_idx) in enumerate(cv.split(X, y)):
     rf_pipeline.fit(X_tr, y_tr)
     y_pred_rf = rf_pipeline.predict(X_val)
     results["RF"].append({
-        "f1_macro":  f1_score(y_val, y_pred_rf, average="macro"),
+        "f1_macro":   f1_score(y_val, y_pred_rf, average="macro"),
         "f1_fracaso": f1_score(y_val, y_pred_rf, average=None)[0],
-        "f1_moderado": f1_score(y_val, y_pred_rf, average=None)[1],
+        "f1_moderado":f1_score(y_val, y_pred_rf, average=None)[1],
         "f1_exito":   f1_score(y_val, y_pred_rf, average=None)[2],
-        "y_val": y_val, "y_pred": y_pred_rf,
     })
 
-    # — XGB —
-    xgb_pipeline.fit(X_tr, y_tr, clf__sample_weight=sw)
-    y_pred_xgb = xgb_pipeline.predict(X_val)
+    # — XGB — reentrenamos desde cero con los params optimizados
+    #          sin early_stopping para no necesitar eval_set
+    clf_xgb = XGBClassifier(
+        subsample        = 0.6,
+        reg_lambda       = 1.0,
+        reg_alpha        = 0.1,
+        n_estimators     = 400,
+        min_child_weight = 5,
+        max_depth        = 5,
+        learning_rate    = 0.03,
+        gamma            = 1.0,
+        colsample_bytree = 0.6,
+        objective        = "multi:softprob",
+        num_class        = 3,
+        eval_metric      = "mlogloss",
+        random_state     = 42,
+        n_jobs           = -1,
+    )
+    clf_xgb.fit(X_tr, y_tr, sample_weight=sw)
+    y_pred_xgb = clf_xgb.predict(X_val)
     results["XGB"].append({
         "f1_macro":   f1_score(y_val, y_pred_xgb, average="macro"),
         "f1_fracaso": f1_score(y_val, y_pred_xgb, average=None)[0],
-        "f1_moderado": f1_score(y_val, y_pred_xgb, average=None)[1],
+        "f1_moderado":f1_score(y_val, y_pred_xgb, average=None)[1],
         "f1_exito":   f1_score(y_val, y_pred_xgb, average=None)[2],
-        "y_val": y_val, "y_pred": y_pred_xgb,
     })
 
-    print(f"  Fold {fold+1} — RF: {results['RF'][-1]['f1_macro']:.3f} | XGB: {results['XGB'][-1]['f1_macro']:.3f}")
+    line = f"RF: {results['RF'][-1]['f1_macro']:.3f} | XGB: {results['XGB'][-1]['f1_macro']:.3f}"
+    print(f"  Fold {fold+1} — {line}")
 
 # Predicciones sobre todo el dataset (para confusion matrix global)
 y_pred_rf_full  = rf_pipeline.predict(X)
