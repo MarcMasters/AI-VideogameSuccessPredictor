@@ -1,0 +1,3 @@
+data/games.csv
+data/processed.parquet
+models/rf_pipeline.joblib

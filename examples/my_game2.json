@@ -1,0 +1,16 @@
+{
+  "name": "Krub",
+  "price": 3.49,
+  "required_age": 0,
+  "n_languages": 2,
+  "multiplayer": true,
+  "windows": true,
+  "mac": false,
+  "linux": false,
+  "genres": ["Indie", "Casual", "Action", "Strategy"],
+  "tags": ["Multiplayer", "Indie", "Casual", "Competitive", "Action", "Animal", "Crab"],
+  "publisher": "Other",
+  "description": "A fast-paced online fighting game set in wherever you can find a crab. Choose the krub that best fits you and crush your friends with your pincers.",
+  "release_year": 2027,
+  "release_quarter": 2
+}
