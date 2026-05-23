@@ -27,10 +27,15 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # ─────────────────────────────────────────────
 print("Cargando datos preprocesados…")
 df = pd.read_parquet(DATA_PATH)
+print(f"  Filas cargadas: {len(df)}")
 
-# Filtra solo los juegos con suficientes reviews (elimina ruido)
-df = df[df["review_tier"] != "ruido"].copy()
-print(f"  Filas tras filtro de ruido: {len(df)}")
+# Entrenamos solo con indies activos
+# df = df[df["is_indie"] == 1].copy()
+df = df[
+    (df["is_indie"] == 1) &
+    (df["estimated_owners_num"] > 0) &
+    (df["total_reviews"] > 100)
+].copy()
 
 # ─────────────────────────────────────────────
 # 2. FEATURES SELECTION
@@ -40,13 +45,13 @@ NUMERIC_BASE = [
     "plat_windows", "plat_mac", "plat_linux",
     "is_multiplayer", "n_languages",
     "desc_length", "release_year", "release_quarter",
+    "publisher_success_avg",   # media de éxito del publisher en juegos indie
 ]
 
-GENRE_COLS = [c for c in df.columns if c.startswith("genre_")]
-TAG_COLS   = [c for c in df.columns if c.startswith("tag_")]
-NUMERIC    = NUMERIC_BASE + GENRE_COLS + TAG_COLS
-
-CATEGORICAL = ["publisher_top"]
+GENRE_COLS  = [c for c in df.columns if c.startswith("genre_")]
+TAG_COLS    = [c for c in df.columns if c.startswith("tag_")]
+NUMERIC     = NUMERIC_BASE + GENRE_COLS + TAG_COLS
+CATEGORICAL = []   # publisher ya es numérico, no necesitamos one-hot
 
 TARGET = "success_class"
 
@@ -72,15 +77,14 @@ for k, v in vc.items():
 # ─────────────────────────────────────────────
 preprocessor = ColumnTransformer(transformers=[
     ("num", StandardScaler(), NUMERIC),
-    ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), CATEGORICAL),
 ])
 
 clf = RandomForestClassifier(
     n_estimators    = 400,
-    max_depth       = None,
-    min_samples_leaf= 5,
+    max_depth       = 15,   # limita profundidad para reducir overfitting
+    min_samples_leaf= 20,   # sube de 5 a 20: cada hoja necesita más ejemplos
     max_features    = "sqrt",
-    class_weight    = "balanced",   # compensa desbalance de clases
+    class_weight    = "balanced",
     random_state    = 42,
     n_jobs          = -1,
 )
@@ -122,10 +126,8 @@ plt.savefig("outputs/confusion_matrix.png", dpi=150)
 plt.close()
 
 # Feature importances
-rf_model = pipeline.named_steps["clf"]
-feat_names_num = NUMERIC
-feat_names_cat = pipeline.named_steps["prep"].named_transformers_["cat"].get_feature_names_out(CATEGORICAL).tolist()
-all_feat_names = feat_names_num + feat_names_cat
+rf_model       = pipeline.named_steps["clf"]
+all_feat_names = NUMERIC
 
 importances = pd.Series(rf_model.feature_importances_, index=all_feat_names)
 top20 = importances.nlargest(20)

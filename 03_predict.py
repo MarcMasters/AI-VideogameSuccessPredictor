@@ -12,7 +12,7 @@ Uso:
 import json, argparse, joblib
 import pandas as pd
 import numpy as np
-from pathlib import Path
+# from pathlib import Path
 
 MODEL_PATH = "models/rf_pipeline.joblib"
 META_PATH  = "models/metadata.json"

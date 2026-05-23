@@ -1,16 +1,16 @@
 {
-  "name": "Mi Juego Indie RPG",
-  "price": 14.99,
-  "required_age": 12,
-  "n_languages": 5,
+  "name": "Hare&Shell",
+  "price": 4.99,
+  "required_age": 0,
+  "n_languages": 2,
   "multiplayer": false,
   "windows": true,
   "mac": false,
-  "linux": true,
-  "genres": ["RPG", "Indie", "Adventure"],
-  "tags": ["Singleplayer", "RPG", "Story Rich", "Fantasy", "Open World"],
+  "linux": false,
+  "genres": ["Indie", "Adventure"],
+  "tags": ["Singleplayer", "Fantasy", "Open World"],
   "publisher": "Other",
-  "description": "An epic indie RPG set in a dark fantasy world with deep lore and branching narrative choices.",
-  "release_year": 2025,
-  "release_quarter": 2
+  "description": "A cozy indie open world set in a cursed island with funny characters and interesting mechanics.",
+  "release_year": 2026,
+  "release_quarter": 3
 }

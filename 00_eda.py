@@ -8,7 +8,7 @@ Genera visualizaciones en outputs/eda_*.png
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+# import matplotlib.gridspec as gridspec
 import re, ast, os
 
 RAW_PATH = "data/games.csv"
@@ -59,7 +59,7 @@ plot_data = [
 
 for ax, (col, title, log) in zip(axes.flat, plot_data):
     s = df[col].dropna()
-    if log:
+    if log: # logarithm
         s = s[s > 0]
         ax.hist(np.log10(s + 1), bins=50, color="#3498db", edgecolor="white", linewidth=0.3)
         ax.set_xlabel(f"log10({col})")
@@ -95,7 +95,7 @@ if genre_col in df.columns:
     plt.tight_layout()
     plt.savefig("outputs/eda_genres.png", dpi=150)
     plt.close()
-    print("✅ outputs/eda_genres.png")
+    print("EXPORTED: outputs/eda_genres.png")
 
 # ─────────────────────────────────────────────────────────
 # FIGURA 3: Correlación precio vs owners
