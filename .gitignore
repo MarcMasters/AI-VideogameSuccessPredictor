@@ -1,3 +1,6 @@
 data/games.csv
 data/processed.parquet
 models/rf_pipeline.joblib
+models/lr_pipeline.joblib
+models/nn_pipeline.joblib
+models/xgb_pipeline.joblib

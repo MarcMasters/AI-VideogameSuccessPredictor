@@ -58,14 +58,13 @@
     "tag_shooter",
     "tag_multiplayer"
   ],
-  "categorical_features": [],
   "target": "success_class",
   "classes": {
     "0": "Fracaso",
     "1": "Moderado",
     "2": "Alto \u00e9xito"
   },
-  "cv_f1_macro_mean": 0.5670539482242303,
-  "cv_f1_macro_std": 0.006023526550762755,
+  "cv_f1_macro_mean": 0.5432714559281508,
+  "cv_f1_macro_std": 0.006399680863412593,
   "n_train": 14450
 }
