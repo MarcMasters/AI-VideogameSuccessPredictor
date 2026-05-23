@@ -1,5 +1,5 @@
 """
-05_compare_all.py
+02.4_compare_ALL.py
 =================
 Compara RF vs XGBoost vs Logistic Regression.
 Genera gráficos en outputs/compare3_*.png
@@ -9,6 +9,7 @@ import pandas as pd
 import numpy as np
 import os, json, joblib
 import matplotlib.pyplot as plt
+from xgboost                    import XGBClassifier
 from sklearn.model_selection    import StratifiedKFold
 from sklearn.metrics            import (
     f1_score, classification_report,
@@ -27,6 +28,23 @@ MODELS    = {
 META_PATH   = "models/metadata.json"
 CLASS_NAMES = ["Fracaso", "Moderado", "Alto éxito"]
 COLORS      = {"RF": "#3498db", "XGB": "#e74c3c", "LR": "#2ecc71"}
+
+XGB_PARAMS = dict(
+    subsample        = 0.6,
+    reg_lambda       = 1.0,
+    reg_alpha        = 0.1,
+    n_estimators     = 400,
+    min_child_weight = 5,
+    max_depth        = 5,
+    learning_rate    = 0.03,
+    gamma            = 1.0,
+    colsample_bytree = 0.6,
+    objective        = "multi:softprob",
+    num_class        = 3,
+    eval_metric      = "mlogloss",
+    random_state     = 42,
+    n_jobs           = -1,
+)
 
 # ─────────────────────────────────────────────
 # 1. DATOS
@@ -62,36 +80,53 @@ pipelines = {name: joblib.load(path) for name, path in MODELS.items()}
 # ─────────────────────────────────────────────
 print("\nCV 5-fold para los 3 modelos…")
 cv      = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-results = {name: [] for name in MODELS}
+results = {name: [] for name in ["RF", "XGB", "LR"]}
 
 for fold, (train_idx, val_idx) in enumerate(cv.split(X, y)):
     X_tr, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_tr, y_val = y.iloc[train_idx], y.iloc[val_idx]
     sw = compute_sample_weight("balanced", y_tr)
 
-    fit_kwargs = {"RF": {}, "XGB": {"clf__sample_weight": sw}, "LR": {}}
+    # RF
+    pipelines["RF"].fit(X_tr, y_tr)
+    y_pred_rf = pipelines["RF"].predict(X_val)
 
-    for name, pipe in pipelines.items():
-        pipe.fit(X_tr, y_tr, **fit_kwargs[name])
-        y_pred = pipe.predict(X_val)
-        f1_per_class = f1_score(y_val, y_pred, average=None)
+    # XGB — instancia nueva sin early_stopping
+    clf_xgb = XGBClassifier(**XGB_PARAMS)
+    clf_xgb.fit(X_tr, y_tr, sample_weight=sw)
+    y_pred_xgb = clf_xgb.predict(X_val)
+
+    # LR
+    pipelines["LR"].fit(X_tr, y_tr)
+    y_pred_lr = pipelines["LR"].predict(X_val)
+
+    for name, y_pred in [("RF", y_pred_rf), ("XGB", y_pred_xgb), ("LR", y_pred_lr)]:
+        f1_pc = f1_score(y_val, y_pred, average=None)
         results[name].append({
             "f1_macro":    f1_score(y_val, y_pred, average="macro"),
-            "f1_fracaso":  f1_per_class[0],
-            "f1_moderado": f1_per_class[1],
-            "f1_exito":    f1_per_class[2],
+            "f1_fracaso":  f1_pc[0],
+            "f1_moderado": f1_pc[1],
+            "f1_exito":    f1_pc[2],
         })
 
-    line = " | ".join(f"{n}: {results[n][-1]['f1_macro']:.3f}" for n in MODELS)
+    line = " | ".join(f"{n}: {results[n][-1]['f1_macro']:.3f}" for n in ["RF", "XGB", "LR"])
     print(f"  Fold {fold+1} — {line}")
 
-# Predicciones finales sobre todo el dataset
+# ─────────────────────────────────────────────
+# PREDICCIONES FINALES
+# ─────────────────────────────────────────────
 y_preds_full = {}
-for name, pipe in pipelines.items():
-    sw = compute_sample_weight("balanced", y)
-    kw = {"clf__sample_weight": sw} if name == "XGB" else {}
-    pipe.fit(X, y, **kw)
-    y_preds_full[name] = pipe.predict(X)
+
+pipelines["RF"].fit(X, y)
+y_preds_full["RF"] = pipelines["RF"].predict(X)
+
+clf_xgb_full = XGBClassifier(**XGB_PARAMS)
+sw_full = compute_sample_weight("balanced", y)
+clf_xgb_full.fit(X, y, sample_weight=sw_full)
+y_preds_full["XGB"] = clf_xgb_full.predict(X)
+
+pipelines["LR"].fit(X, y)
+y_preds_full["LR"] = pipelines["LR"].predict(X)
 
 # ─────────────────────────────────────────────
 # 3. FIGURA 1 — F1-macro por fold
@@ -148,7 +183,7 @@ print("✅ outputs/compare3_f1_per_class.png")
 fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 fig.suptitle("Matrices de confusión normalizadas (% por fila)", fontsize=13)
 
-for ax, name in zip(axes, MODELS):
+for ax, name in zip(axes, ["RF", "XGB", "LR"]):
     cm = confusion_matrix(y, y_preds_full[name], normalize="true")
     ConfusionMatrixDisplay(cm, display_labels=CLASS_NAMES).plot(
         ax=ax, cmap="Blues", colorbar=False
@@ -163,14 +198,17 @@ print("✅ outputs/compare3_confusion_normalized.png")
 # ─────────────────────────────────────────────
 # 6. RESUMEN TABULAR
 # ─────────────────────────────────────────────
+metric_labels = ["F1-macro", "F1 Fracaso", "F1 Moderado", "F1 Alto éxito"]
+metric_keys2  = ["f1_macro", "f1_fracaso", "f1_moderado", "f1_exito"]
+
 print("\n" + "="*60)
 print(f"{'MÉTRICA':<28} {'RF':>8} {'XGB':>8} {'LR':>8}")
 print("="*60)
 for label, key in zip(metric_labels, metric_keys2):
-    vals   = {n: np.mean([r[key] for r in results[n]]) for n in MODELS}
+    vals   = {n: np.mean([r[key] for r in results[n]]) for n in ["RF", "XGB", "LR"]}
     winner = max(vals, key=vals.get)
     row    = "  " + f"{label:<26}"
-    for n in MODELS:
+    for n in ["RF", "XGB", "LR"]:
         mark = "*" if n == winner else " "
         row += f" {vals[n]:>7.3f}{mark}"
     print(row)
