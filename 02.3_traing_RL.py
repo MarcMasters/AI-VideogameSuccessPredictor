@@ -1,5 +1,5 @@
 """
-02.2_train_lr.py
+02.3_train_RL.py
 ================
 Entrena un LogisticRegression con las features pre-lanzamiento.
 Guarda el modelo en models/lr_pipeline.joblib

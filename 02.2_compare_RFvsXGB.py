@@ -1,7 +1,7 @@
 """
-04_compare_models.py
+02.2_compare_RFvsXGB.py
 ====================
-Compara RF (02_train.py) vs XGBoost (02.1_train.py).
+Compara RF (02_train_RF.py) vs XGBoost (02.1_train_XGB.py).
 Genera gráficos en outputs/compare_*.png
 """
 
