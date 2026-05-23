@@ -65,7 +65,7 @@
     "1": "Moderado",
     "2": "Alto \u00e9xito"
   },
-  "cv_f1_macro_mean": 0.5490296596544639,
-  "cv_f1_macro_std": 0.007265857228777278,
+  "cv_f1_macro_mean": 0.5233013601415044,
+  "cv_f1_macro_std": 0.0064863149264579355,
   "n_train": 14450
 }

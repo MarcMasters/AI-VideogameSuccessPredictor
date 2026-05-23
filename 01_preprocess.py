@@ -5,7 +5,7 @@ Limpieza, ingeniería de features y cálculo del success_score.
 Ajustado para contexto INDIE:
   - Normalización basada en percentiles del subconjunto indie
   - Umbrales de clase por percentil (p50 / p80) en lugar de fijos
-  - Publisher: feature numérica de media de éxito (opción 2)
+  - Publisher: feature numérica de media de éxito
 Genera: data/processed.parquet
 """
 
@@ -167,13 +167,13 @@ df["success_class"] = df["success_score"].apply(score_to_class)
 
 labels = {0: "Fracaso", 1: "Moderado", 2: "Alto éxito"}
 
-print("\nDistribución de clases (todos los juegos):")
-for k, v in df["success_class"].value_counts().sort_index().items():
-    print(f"  {labels[k]:12s}: {v:6d}  ({v/len(df)*100:.1f}%)")
+# print("\nDistribución de clases (todos los juegos):")
+# for k, v in df["success_class"].value_counts().sort_index().items():
+#     print(f"  {labels[k]:12s}: {v:6d}  ({v/len(df)*100:.1f}%)")
 
 print("\nDistribución de clases (solo indie):")
-vc_i = df.loc[indie_mask, "success_class"].value_counts().sort_index()
-n_i  = indie_mask.sum()
+vc_i = df.loc[indie_active_mask, "success_class"].value_counts().sort_index()
+n_i  = indie_active_mask.sum()
 for k, v in vc_i.items():
     print(f"  {labels[k]:12s}: {v:6d}  ({v/n_i*100:.1f}%)")
 
@@ -240,7 +240,11 @@ for t in TOP_TAGS:
     safe = re.sub(r"[^a-z0-9]", "_", t.lower())
     df[f"tag_{safe}"] = df["tags_list"].apply(lambda lst: int(t in lst))
 
-# --- Publisher: media de éxito sobre juegos indie (mín. 3 juegos) ---
+# --- Publisher: media de éxito sobre juegos indie (mín. 3 juegos indie + leave-one-out) ---
+#     Leave-one-out: la media del publisher para cada juego se calcula
+#      excluyendo ese mismo juego, evitando data leakage (el modelo no puede
+#      "ver" el éxito del juego que está intentando predecir).
+
 pub_col = "publishers" if "publishers" in df.columns else "publisher"
 if pub_col in df.columns:
     df["publisher_clean"] = df[pub_col].apply(
@@ -249,24 +253,47 @@ if pub_col in df.columns:
 else:
     df["publisher_clean"] = "Unknown"
 
-pub_stats = (
-    df[indie_mask]
-    .groupby("publisher_clean")["success_score"]
-    .agg(["mean", "count"])
-    .rename(columns={"mean": "pub_success_avg", "count": "pub_game_count"})
-)
-# Solo publishers con al menos 3 juegos indie son fiables
-pub_avg_map      = pub_stats[pub_stats["pub_game_count"] >= 3]["pub_success_avg"]
-global_indie_avg = df.loc[indie_mask, "success_score"].mean()
+pub_sum   = df[indie_active_mask].groupby("publisher_clean")["success_score"].sum()
+pub_count = df[indie_active_mask].groupby("publisher_clean")["success_score"].count()
 
-df["publisher_success_avg"] = (
-    df["publisher_clean"]
-    .map(pub_avg_map)
-    .fillna(global_indie_avg)   # fallback: media global indie
-)
+# Fallback: media global de indies activos
+# global_indie_avg = df.loc[indie_active_mask, "success_score"].mean()
 
-print(f"\n  Publishers con ≥3 juegos indie: {len(pub_avg_map)}")
-print(f"  Media global indie (fallback):  {global_indie_avg:.1f}")
+# Juegos indie activos SIN publisher conocido (fallback o < 3 juegos)
+unknown_pubs = set(df["publisher_clean"]) - set(pub_count[pub_count >= 3].index) # publishers con <3 juegos
+self_published_mask = indie_active_mask & df["publisher_clean"].isin(unknown_pubs) # solo los publishers de indies activos
+self_published_avg  = df.loc[self_published_mask, "success_score"].mean()
+
+def publisher_avg_loo(row):
+    pub   = row["publisher_clean"]
+    score = row["success_score"]
+    
+    # publisher desconocido > media global
+    if pub not in pub_sum.index:
+        return self_published_avg
+    
+    # < 3 juegos > historial insuficiente
+    count = pub_count[pub]
+    if count < 3:
+        return self_published_avg
+    
+    # Excluye el score del juego actual del calculo del avg (leave-one-out)
+    return (pub_sum[pub] - score) / (count - 1)
+
+df["publisher_success_avg"] = df.apply(publisher_avg_loo, axis=1)
+
+n_pubs_valid = int((pub_count >= 3).sum())
+print(f"\n  Publishers con ≥3 juegos indie activos: {n_pubs_valid}")
+print(f"  Media indies activos sin publisher (fallback):  {self_published_avg:.1f}")
+
+# df["publisher_success_avg"] = (
+#     df["publisher_clean"]
+#     .map(pub_avg_map)
+#     .fillna(global_indie_avg)   # fallback: media global indie
+# )
+
+# print(f"\n  Publishers con ≥3 juegos indie válidos: {len(pub_avg_map)}")
+# print(f"  Media global indie válido (fallback):  {global_indie_avg:.1f}")
 
 # --- Release date ---
 if "release_date" in df.columns:
@@ -287,7 +314,7 @@ os.makedirs("models", exist_ok=True)
 thresholds = {
     "p50":              float(p50),
     "p80":              float(p80),
-    "global_indie_avg": float(global_indie_avg),
+    "self_published_avg": float(self_published_avg),
     "norm_params":      indie_norm_params,
     "top_genres":       TOP_GENRES,
     "top_tags":         TOP_TAGS,

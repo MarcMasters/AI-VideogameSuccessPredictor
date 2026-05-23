@@ -132,6 +132,10 @@ all_feat_names = NUMERIC
 importances = pd.Series(rf_model.feature_importances_, index=all_feat_names)
 top20 = importances.nlargest(20)
 
+# Diagnóstico: ¿qué publishers tienen mayor publisher_success_avg?
+pub_scores = df[["publisher_clean", "publisher_success_avg"]].drop_duplicates()
+print(pub_scores.sort_values("publisher_success_avg", ascending=False).head(20))
+
 fig, ax = plt.subplots(figsize=(8, 6))
 top20.sort_values().plot(kind="barh", ax=ax, color="#2ecc71")
 ax.set_title("Top 20 Feature Importances")

@@ -1,7 +1,7 @@
 {
   "p50": 12.64600628726148,
   "p80": 27.32585693178725,
-  "global_indie_avg": 9.872020580353759,
+  "self_published_avg": 19.5481647295692,
   "norm_params": {
     "estimated_owners_num": {
       "floor": 0.0,
