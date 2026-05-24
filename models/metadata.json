@@ -65,24 +65,14 @@
     "tag_shooter",
     "tag_multiplayer"
   ],
-  "tagit get": "success_class",
+  "categorical_features": [],
+  "target": "success_class",
   "classes": {
     "0": "Fracaso",
     "1": "Moderado",
     "2": "Alto \u00e9xito"
   },
-  "best_params": {
-    "subsample": 0.6,
-    "reg_lambda": 1.0,
-    "reg_alpha": 0.1,
-    "n_estimators": 400,
-    "min_child_weight": 5,
-    "max_depth": 5,
-    "learning_rate": 0.03,
-    "gamma": 1.0,
-    "colsample_bytree": 0.6
-  },
-  "cv_f1_macro_mean": 0.583948855762786,
-  "cv_f1_macro_std": 0.005524567115094847,
+  "cv_f1_macro_mean": 0.5443823318996291,
+  "cv_f1_macro_std": 0.007914680983407323,
   "n_train": 14450
 }

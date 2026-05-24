@@ -33,28 +33,23 @@ XGB_PARAMS = dict(
     subsample        = 0.6,
     reg_lambda       = 1.0,
     reg_alpha        = 0.1,
-    n_estimators     = 400,
-    min_child_weight = 5,
-    max_depth        = 5,
+    n_estimators     = 600,
+    min_child_weight = 100,
+    max_depth        = 3,
     learning_rate    = 0.03,
     gamma            = 1.0,
-    colsample_bytree = 0.6,
-    objective        = "multi:softprob",
-    num_class        = 3,
-    eval_metric      = "mlogloss",
-    random_state     = 42,
-    n_jobs           = -1,
+    colsample_bytree = 0.4,
 )
 
 LGBM_PARAMS = dict(
     n_estimators      = 500,
-    max_depth         = 6,
+    max_depth         = 3,
     learning_rate     = 0.03,
     subsample         = 0.7,
-    colsample_bytree  = 0.7,
-    min_child_samples = 20,
+    colsample_bytree  = 0.4,
+    min_child_samples = 100,
     reg_alpha         = 0.1,
-    reg_lambda        = 1.0,
+    reg_lambda        = 10.0,
     class_weight      = "balanced",
     random_state      = 42,
     n_jobs            = -1,
@@ -268,7 +263,7 @@ for name, color in COLORS.items():
     values += values[:1]
     ax.plot(angles, values, "o-", color=color, label=name, linewidth=2)
     ax.fill(angles, values, color=color, alpha=0.08)
-    
+
 # ─────────────────────────────────────────────
 # 8. RESUMEN TABULAR
 # ─────────────────────────────────────────────

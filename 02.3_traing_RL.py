@@ -82,20 +82,28 @@ pipeline = Pipeline([
 # 4. CROSS-VALIDATION
 # ─────────────────────────────────────────────
 print("\nCross-validation (5-fold estratificado)…")
-cv        = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-cv_scores = []
+cv           = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv_scores    = []
+train_scores = []
 
 for fold, (train_idx, val_idx) in enumerate(cv.split(X, y)):
     X_tr, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_tr, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
     pipeline.fit(X_tr, y_tr)
-    score = f1_score(y_val, pipeline.predict(X_val), average="macro")
-    cv_scores.append(score)
-    print(f"  Fold {fold+1}: F1-macro = {score:.3f}")
+    val_f1   = f1_score(y_val, pipeline.predict(X_val), average="macro")
+    train_f1 = f1_score(y_tr,  pipeline.predict(X_tr),  average="macro")
 
-cv_scores = np.array(cv_scores)
-print(f"  Media: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
+    cv_scores.append(val_f1)
+    train_scores.append(train_f1)
+    print(f"  Fold {fold+1}: train={train_f1:.3f}  val={val_f1:.3f}  "
+          f"gap={train_f1-val_f1:.3f}")
+
+cv_scores    = np.array(cv_scores)
+train_scores = np.array(train_scores)
+print(f"\n  Val  F1-macro: {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
+print(f"  Train F1-macro: {train_scores.mean():.3f} ± {train_scores.std():.3f}")
+print(f"  Gap medio:      {(train_scores - cv_scores).mean():.3f}")
 
 # ─────────────────────────────────────────────
 # 5. FIT FINAL
