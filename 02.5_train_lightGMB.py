@@ -22,7 +22,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 # HIPERPARÁMETROS — modificar solo aquí
 # ─────────────────────────────────────────────
 LGBM_PARAMS = dict(
-    n_estimators      = 500,
+    n_estimators      = 700,
     max_depth         = 3,
     learning_rate     = 0.03,
     subsample         = 0.7,
@@ -36,7 +36,7 @@ LGBM_PARAMS = dict(
     verbose           = -1,
 )
 
-EARLY_STOPPING_ROUNDS = 30
+EARLY_STOPPING_ROUNDS = 50
 
 # ─────────────────────────────────────────────
 # 1. CARGA Y FEATURES
