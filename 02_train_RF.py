@@ -18,7 +18,7 @@ from sklearn.metrics           import (classification_report,
                                        ConfusionMatrixDisplay)
 import matplotlib.pyplot as plt
 
-DATA_PATH  = "data/processed.parquet"
+DATA_PATH  = "data/processed_v2.parquet"
 MODEL_DIR  = "models"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
@@ -46,6 +46,9 @@ NUMERIC_BASE = [
     "is_multiplayer", "n_languages",
     "desc_length", "release_year", "release_quarter",
     "publisher_success_avg",   # media de éxito del publisher en juegos indie
+    "price_per_lang", "n_tags", "n_platforms",
+    "mp_x_free", "action_singleplayer",
+    "desc_length_log", "publisher_tier",
 ]
 
 GENRE_COLS  = [c for c in df.columns if c.startswith("genre_")]

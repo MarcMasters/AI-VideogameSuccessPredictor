@@ -12,6 +12,13 @@
     "release_year",
     "release_quarter",
     "publisher_success_avg",
+    "price_per_lang",
+    "n_tags",
+    "n_platforms",
+    "mp_x_free",
+    "action_singleplayer",
+    "desc_length_log",
+    "publisher_tier",
     "genre_indie",
     "genre_casual",
     "genre_action",
@@ -75,7 +82,7 @@
     "gamma": 1.0,
     "colsample_bytree": 0.6
   },
-  "cv_f1_macro_mean": 0.5716446360309818,
-  "cv_f1_macro_std": 0.007927407238217096,
+  "cv_f1_macro_mean": 0.583948855762786,
+  "cv_f1_macro_std": 0.005524567115094847,
   "n_train": 14450
 }

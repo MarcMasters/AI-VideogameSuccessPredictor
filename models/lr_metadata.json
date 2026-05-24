@@ -12,6 +12,13 @@
     "release_year",
     "release_quarter",
     "publisher_success_avg",
+    "price_per_lang",
+    "n_tags",
+    "n_platforms",
+    "mp_x_free",
+    "action_singleplayer",
+    "desc_length_log",
+    "publisher_tier",
     "genre_indie",
     "genre_casual",
     "genre_action",
@@ -64,7 +71,7 @@
     "1": "Moderado",
     "2": "Alto \u00e9xito"
   },
-  "cv_f1_macro_mean": 0.5432714559281508,
-  "cv_f1_macro_std": 0.006399680863412593,
+  "cv_f1_macro_mean": 0.5559263436935382,
+  "cv_f1_macro_std": 0.007266136996155987,
   "n_train": 14450
 }
