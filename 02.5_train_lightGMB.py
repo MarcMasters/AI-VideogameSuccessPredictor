@@ -1,5 +1,5 @@
 """
-02.3_train_LGBM.py
+02.5_train_LGBM.py
 ==================
 LightGBM con feature engineering extendido.
 Guarda el modelo en models/lgbm_pipeline.joblib
@@ -8,14 +8,35 @@ Guarda el modelo en models/lgbm_pipeline.joblib
 import pandas as pd
 import numpy as np
 import os, json, joblib
-from lightgbm                   import LGBMClassifier
-from sklearn.model_selection    import StratifiedKFold, train_test_split
-from sklearn.pipeline           import Pipeline
-from sklearn.metrics            import classification_report, f1_score
+import lightgbm as lgb
+from lightgbm                import LGBMClassifier
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.pipeline        import Pipeline
+from sklearn.metrics         import classification_report, f1_score
 
 DATA_PATH = "data/processed_v2.parquet"
 MODEL_DIR = "models"
 os.makedirs(MODEL_DIR, exist_ok=True)
+
+# ─────────────────────────────────────────────
+# HIPERPARÁMETROS — modificar solo aquí
+# ─────────────────────────────────────────────
+LGBM_PARAMS = dict(
+    n_estimators      = 500,
+    max_depth         = 3,
+    learning_rate     = 0.03,
+    subsample         = 0.7,
+    colsample_bytree  = 0.4,
+    min_child_samples = 100,
+    reg_alpha         = 0.1,
+    reg_lambda        = 10.0,
+    class_weight      = "balanced",
+    random_state      = 42,
+    n_jobs            = -1,
+    verbose           = -1,
+)
+
+EARLY_STOPPING_ROUNDS = 30
 
 # ─────────────────────────────────────────────
 # 1. CARGA Y FEATURES
@@ -57,29 +78,7 @@ for k, v in y.value_counts().sort_index().items():
     print(f"  {['Fracaso','Moderado','Alto éxito'][k]}: {v} ({v/len(y)*100:.1f}%)")
 
 # ─────────────────────────────────────────────
-# 2. MODELO
-# LightGBM soporta class_weight="balanced" nativamente
-# y maneja NaNs — no necesita StandardScaler
-# ─────────────────────────────────────────────
-clf = LGBMClassifier(
-    n_estimators      = 500,
-    max_depth         = 6,
-    learning_rate     = 0.03,
-    subsample         = 0.7,
-    colsample_bytree  = 0.7,
-    min_child_samples = 20,
-    reg_alpha         = 0.1,
-    reg_lambda        = 1.0,
-    class_weight      = "balanced",
-    random_state      = 42,
-    n_jobs            = -1,
-    verbose           = -1,        # silencia logs de LightGBM
-)
-
-pipeline = Pipeline([("clf", clf)])
-
-# ─────────────────────────────────────────────
-# 3. CV MANUAL CON EARLY STOPPING
+# 2. CV MANUAL CON EARLY STOPPING
 # ─────────────────────────────────────────────
 print("\nCross-validation (5-fold estratificado)…")
 cv           = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
@@ -90,26 +89,13 @@ for fold, (train_idx, val_idx) in enumerate(cv.split(X, y)):
     X_tr, X_val = X.iloc[train_idx], X.iloc[val_idx]
     y_tr, y_val = y.iloc[train_idx], y.iloc[val_idx]
 
-    clf_fold = LGBMClassifier(
-        n_estimators      = 500,
-        max_depth         = 6,
-        learning_rate     = 0.03,
-        subsample         = 0.7,
-        colsample_bytree  = 0.7,
-        min_child_samples = 20,
-        reg_alpha         = 0.1,
-        reg_lambda        = 1.0,
-        class_weight      = "balanced",
-        random_state      = 42,
-        n_jobs            = -1,
-        verbose           = -1,
-    )
+    clf_fold = LGBMClassifier(**LGBM_PARAMS)
     clf_fold.fit(
         X_tr, y_tr,
-        eval_set              = [(X_val, y_val)],
-        callbacks             = [
-            __import__("lightgbm").early_stopping(30, verbose=False),
-            __import__("lightgbm").log_evaluation(period=-1),
+        eval_set  = [(X_val, y_val)],
+        callbacks = [
+            lgb.early_stopping(EARLY_STOPPING_ROUNDS, verbose=False),
+            lgb.log_evaluation(period=-1),
         ],
     )
 
@@ -127,34 +113,19 @@ print(f"  Train F1-macro: {train_scores.mean():.3f} ± {train_scores.std():.3f}"
 print(f"  Gap medio:      {(train_scores - cv_scores).mean():.3f}")
 
 # ─────────────────────────────────────────────
-# 4. FIT FINAL CON EARLY STOPPING
+# 3. FIT FINAL CON EARLY STOPPING
 # ─────────────────────────────────────────────
 print("\nEntrenando modelo final…")
-import lightgbm as lgb
-
 X_tr_f, X_val_f, y_tr_f, y_val_f = train_test_split(
     X, y, test_size=0.1, stratify=y, random_state=42
 )
 
-final_clf = LGBMClassifier(
-    n_estimators      = 500,
-    max_depth         = 6,
-    learning_rate     = 0.03,
-    subsample         = 0.7,
-    colsample_bytree  = 0.7,
-    min_child_samples = 20,
-    reg_alpha         = 0.1,
-    reg_lambda        = 1.0,
-    class_weight      = "balanced",
-    random_state      = 42,
-    n_jobs            = -1,
-    verbose           = -1,
-)
+final_clf = LGBMClassifier(**LGBM_PARAMS)
 final_clf.fit(
     X_tr_f, y_tr_f,
     eval_set  = [(X_val_f, y_val_f)],
     callbacks = [
-        lgb.early_stopping(30, verbose=False),
+        lgb.early_stopping(EARLY_STOPPING_ROUNDS, verbose=False),
         lgb.log_evaluation(period=-1),
     ],
 )
@@ -168,7 +139,7 @@ print(classification_report(y, y_pred,
       target_names=["Fracaso", "Moderado", "Alto éxito"]))
 
 # ─────────────────────────────────────────────
-# 5. GUARDAR
+# 4. GUARDAR
 # ─────────────────────────────────────────────
 joblib.dump(final_pipeline, f"{MODEL_DIR}/lgbm_pipeline.joblib")
 
@@ -176,6 +147,7 @@ metadata = {
     "numeric_features": NUMERIC,
     "target":           TARGET,
     "classes":          {0: "Fracaso", 1: "Moderado", 2: "Alto éxito"},
+    "lgbm_params":      LGBM_PARAMS,
     "cv_f1_macro_mean": float(cv_scores.mean()),
     "cv_f1_macro_std":  float(cv_scores.std()),
     "n_train":          len(X),
