@@ -1,0 +1,19 @@
+{
+  "name": "Hare&Shell",
+  "price": 4.99,
+  "required_age": 0,
+  "supported_languages": ["English", "Spanish - Spain"],
+  "multiplayer": false,
+  "windows": true,
+  "mac": false,
+  "linux": false,
+  "n_screenshots": 5,
+  "n_movies": 1,
+  "n_achievements": 10,
+  "genres": ["Indie", "Adventure"],
+  "tags": ["Singleplayer", "Fantasy", "Open World"],
+  "publisher": "Other",
+  "description": "A cozy indie open world set in a cursed island with funny characters and interesting mechanics.",
+  "release_year": 2026,
+  "release_quarter": 3
+}
