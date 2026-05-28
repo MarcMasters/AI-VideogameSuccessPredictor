@@ -2,7 +2,6 @@
 02_train_RF.py
 ==============
 Uso:
-    python 02_train_RF.py --data processed_v2
     python 02_train_RF.py --data processed_multiclass
     python 02_train_RF.py --data processed_binary
 """
@@ -166,27 +165,7 @@ print("\nClassification report (train — referencia):")
 print(classification_report(y, y_pred, target_names=CLASS_NAMES))
 
 # ─────────────────────────────────────────────
-# 6. GRÁFICOS
-# ─────────────────────────────────────────────
-cm = confusion_matrix(y, y_pred)
-fig, ax = plt.subplots(figsize=(6, 5))
-ConfusionMatrixDisplay(cm, display_labels=CLASS_NAMES).plot(ax=ax, cmap="Blues")
-ax.set_title(f"Confusion Matrix RF — {args.data}")
-plt.tight_layout()
-plt.savefig(f"{OUT_DIR}/rf_confusion_matrix.png", dpi=150)
-plt.close()
-
-importances = pd.Series(pipeline.named_steps["clf"].feature_importances_, index=NUMERIC)
-fig, ax = plt.subplots(figsize=(8, 6))
-importances.nlargest(20).sort_values().plot(kind="barh", ax=ax, color="#2ecc71")
-ax.set_title("Top 20 Feature Importances — RF")
-plt.tight_layout()
-plt.savefig(f"{OUT_DIR}/rf_feature_importances.png", dpi=150)
-plt.close()
-print(f"  Gráficos guardados en {OUT_DIR}/")
-
-# ─────────────────────────────────────────────
-# 7. GUARDAR
+# 6. GUARDAR
 # ─────────────────────────────────────────────
 joblib.dump(pipeline, f"{MODEL_DIR}/rf_pipeline.joblib")
 

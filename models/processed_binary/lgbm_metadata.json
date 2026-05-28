@@ -66,12 +66,12 @@
   },
   "is_binary": true,
   "lgbm_params": {
-    "n_estimators": "700",
-    "max_depth": "3",
+    "n_estimators": "800",
+    "max_depth": "4",
     "learning_rate": "0.03",
     "subsample": "0.7",
-    "colsample_bytree": "0.4",
-    "min_child_samples": "100",
+    "colsample_bytree": "0.7",
+    "min_child_samples": "20",
     "reg_alpha": "0.1",
     "reg_lambda": "10.0",
     "class_weight": "balanced",
@@ -80,9 +80,9 @@
     "n_jobs": "-1",
     "verbose": "-1"
   },
-  "cv_f1_macro_mean": 0.6664045291985901,
-  "cv_f1_macro_std": 0.005714925340770894,
-  "cv_auc_mean": 0.729290326712899,
+  "cv_f1_macro_mean": 0.6674811836177998,
+  "cv_f1_macro_std": 0.00798384195754861,
+  "cv_auc_mean": 0.7320481422607298,
   "n_train": 13105,
   "data_version": "processed_binary"
 }

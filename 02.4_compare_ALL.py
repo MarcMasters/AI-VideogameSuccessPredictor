@@ -1,10 +1,9 @@
 """
-02.6_compare_ALL.py
+02.4_compare_ALL.py
 ===================
 Uso:
-    python 02.6_compare_ALL.py --data processed_v2
-    python 02.6_compare_ALL.py --data processed_multiclass
-    python 02.6_compare_ALL.py --data processed_binary
+    python 02.4_compare_ALL.py --data processed_multiclass
+    python 02.4_compare_ALL.py --data processed_binary
 """
 
 import argparse

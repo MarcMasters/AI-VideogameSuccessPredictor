@@ -1,10 +1,9 @@
 """
-02.5_train_LGBM.py
+02.3_train_LGBM.py
 ==================
 Uso:
-    python 02.5_train_LGBM.py --data processed_v2
-    python 02.5_train_LGBM.py --data processed_multiclass
-    python 02.5_train_LGBM.py --data processed_binary
+    python 02.3_train_LGBM.py --data processed_multiclass
+    python 02.3_train_LGBM.py --data processed_binary
 """
 
 import argparse
@@ -39,12 +38,12 @@ print(f"{'='*55}\n")
 # HIPERPARÁMETROS — modificar solo aquí
 # ─────────────────────────────────────────────
 LGBM_PARAMS = dict(
-    n_estimators      = 700,
-    max_depth         = 3,
+    n_estimators      = 800,
+    max_depth         = 4,
     learning_rate     = 0.03,
     subsample         = 0.7,
-    colsample_bytree  = 0.4,
-    min_child_samples = 100,
+    colsample_bytree  = 0.7,
+    min_child_samples = 20,
     reg_alpha         = 0.1,
     reg_lambda        = 10.0,
     class_weight      = "balanced",

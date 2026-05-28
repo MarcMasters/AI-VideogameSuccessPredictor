@@ -1,10 +1,9 @@
 """
-02.3_train_LR.py
+02.2_train_LR.py
 ================
 Uso:
-    python 02.3_train_LR.py --data processed_v2
-    python 02.3_train_LR.py --data processed_multiclass
-    python 02.3_train_LR.py --data processed_binary
+    python 02.2_train_LR.py --data processed_multiclass
+    python 02.2_train_LR.py --data processed_binary
 """
 
 import argparse

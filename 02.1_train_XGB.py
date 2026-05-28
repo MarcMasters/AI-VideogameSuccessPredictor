@@ -2,7 +2,6 @@
 02.1_train_XGB.py
 =================
 Uso:
-    python 02.1_train_XGB.py --data processed_v2
     python 02.1_train_XGB.py --data processed_multiclass
     python 02.1_train_XGB.py --data processed_binary
 """
