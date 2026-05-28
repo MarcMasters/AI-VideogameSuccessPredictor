@@ -1,0 +1,19 @@
+{
+  "name": "Echoes of Dread",
+  "price": 12.99,
+  "required_age": 18,
+  "supported_languages": ["English", "German", "French", "Spanish - Spain", "Portuguese - Brazil", "Russian"],
+  "multiplayer": false,
+  "windows": true,
+  "mac": false,
+  "linux": true,
+  "n_screenshots": 10,
+  "n_movies": 2,
+  "n_achievements": 25,
+  "genres": ["Indie", "Action", "Adventure"],
+  "tags": ["Horror", "Singleplayer", "Atmospheric", "Story Rich", "Exploration", "3D", "First Person"],
+  "publisher": "Other",
+  "description": "A first-person psychological horror set in an abandoned research facility. Solve puzzles, uncover secrets and survive the unknown. Rich narrative, hand-crafted environments, no jump-scare padding.",
+  "release_year": 2026,
+  "release_quarter": 4
+}
